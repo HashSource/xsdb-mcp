@@ -178,7 +178,11 @@ impl XsdbServer {
             .write_all(msg.as_bytes())
             .await
             .map_err(|e| McpError::internal_error(format!("Failed to send command: {e}"), None))?;
-        reader.get_mut().flush().await.ok();
+        reader
+            .get_mut()
+            .flush()
+            .await
+            .map_err(|e| McpError::internal_error(format!("Failed to flush: {e}"), None))?;
 
         // Read response until \n (protocol sends \r\n)
         let response = timeout(READ_TIMEOUT, async {
@@ -263,7 +267,7 @@ impl ServerHandler for XsdbServer {
     fn get_info(&self) -> ServerInfo {
         let mut info = ServerInfo::new(ServerCapabilities::builder().enable_tools().build());
         info.server_info.name = "xsdb-mcp".into();
-        info.server_info.version = "0.1.0".into();
+        info.server_info.version = env!("CARGO_PKG_VERSION").into();
         info.instructions = Some(
             "XSDB MCP Server — interact with Xilinx XSDB/XSCT for hardware debugging, \
              FPGA programming, and TCL scripting. Call xsdb_connect first, then xsdb_eval \
